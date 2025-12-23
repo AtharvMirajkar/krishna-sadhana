@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/mongodb';
-import type { ChantingRecord } from '@/lib/models/ChantingRecord';
+import { NextRequest, NextResponse } from "next/server";
+import { getDb } from "@/lib/mongodb";
+import type { ChantingRecord } from "@/lib/models/ChantingRecord";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('user_id');
-    const chantDate = searchParams.get('chant_date');
-    const fromDate = searchParams.get('from_date');
+    const userId = searchParams.get("user_id");
+    const chantDate = searchParams.get("chant_date");
+    const fromDate = searchParams.get("from_date");
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'user_id is required' },
+        { error: "user_id is required" },
         { status: 400 }
       );
     }
@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
     }
 
     const records = await db
-      .collection<ChantingRecord>('chanting_records')
+      .collection<ChantingRecord>("chanting_records")
       .find(query)
       .toArray();
 
-    const formattedRecords = records.map(record => ({
-      id: record._id?.toString() || '',
+    const formattedRecords = records.map((record) => ({
+      id: record._id?.toString() || "",
       mantra_id: record.mantra_id,
       user_id: record.user_id,
       chant_count: record.chant_count,
@@ -46,9 +46,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(formattedRecords);
   } catch (error) {
-    console.error('Error fetching chanting records:', error);
+    console.error("Error fetching chanting records:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch chanting records' },
+      { error: "Failed to fetch chanting records" },
       { status: 500 }
     );
   }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     if (!mantra_id || !user_id || !chant_date) {
       return NextResponse.json(
-        { error: 'mantra_id, user_id, and chant_date are required' },
+        { error: "mantra_id, user_id, and chant_date are required" },
         { status: 400 }
       );
     }
@@ -69,8 +69,10 @@ export async function POST(request: NextRequest) {
     const db = await getDb();
     const now = new Date();
 
+    const collection = db.collection<ChantingRecord>("chanting_records");
+
     // Upsert: update if exists, insert if not
-    const result = await db.collection<ChantingRecord>('chanting_records').findOneAndUpdate(
+    await collection.updateOne(
       {
         mantra_id,
         user_id,
@@ -90,20 +92,25 @@ export async function POST(request: NextRequest) {
       },
       {
         upsert: true,
-        returnDocument: 'after',
       }
     );
 
-    const record = result.value;
+    // Fetch the updated/inserted document
+    const record = await collection.findOne({
+      mantra_id,
+      user_id,
+      chant_date,
+    });
+
     if (!record) {
       return NextResponse.json(
-        { error: 'Failed to create/update record' },
+        { error: "Failed to create/update record" },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
-      id: record._id?.toString() || '',
+      id: record._id?.toString() || "",
       mantra_id: record.mantra_id,
       user_id: record.user_id,
       chant_count: record.chant_count,
@@ -112,11 +119,10 @@ export async function POST(request: NextRequest) {
       updated_at: record.updated_at.toISOString(),
     });
   } catch (error) {
-    console.error('Error creating/updating chanting record:', error);
+    console.error("Error creating/updating chanting record:", error);
     return NextResponse.json(
-      { error: 'Failed to create/update chanting record' },
+      { error: "Failed to create/update chanting record" },
       { status: 500 }
     );
   }
 }
-

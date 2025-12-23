@@ -83,7 +83,7 @@ export function Home({ onNavigate }: HomeProps) {
 
           <div className="mt-24 text-center animate-fadeIn" style={{ animationDelay: '0.5s' }}>
             <blockquote className="text-xl md:text-2xl text-gray-700 dark:text-gray-300 italic max-w-3xl mx-auto">
-              "Chanting the holy name of Krishna is the most effective means of self-realization in this age."
+              &ldquo;Chanting the holy name of Krishna is the most effective means of self-realization in this age.&rdquo;
             </blockquote>
             <p className="mt-4 text-amber-600 dark:text-amber-400 font-semibold">- Bhagavad Gita</p>
           </div>
