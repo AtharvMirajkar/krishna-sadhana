@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Menu, X, Sun, Moon, Sparkles } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Menu, X, Sun, Moon, Sparkles, LogOut, User } from 'lucide-react';
 import { useTheme } from './ThemeProvider';
+import { useAuth } from './AuthProvider';
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
+  const { user, logout, loading } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { href: '/', label: 'Home' },
@@ -22,6 +25,12 @@ export function Navigation() {
       return pathname === '/';
     }
     return pathname.startsWith(href);
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/auth/login');
+    setIsMenuOpen(false);
   };
 
   return (
@@ -45,6 +54,8 @@ export function Navigation() {
                 {item.label}
               </Link>
             ))}
+
+            {/* Theme toggle */}
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-110"
@@ -56,6 +67,37 @@ export function Navigation() {
                 <Sun className="w-5 h-5 text-white" />
               )}
             </button>
+
+            {/* Auth buttons */}
+            {loading ? (
+              <div className="w-8 h-8 bg-white/20 rounded-full animate-pulse"></div>
+            ) : user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-white text-sm">Hi, {user.name.split(' ')[0]}</span>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all duration-200 hover:scale-110"
+                  aria-label="Logout"
+                >
+                  <LogOut className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Link
+                  href="/auth/login"
+                  className="text-white font-medium hover:text-amber-200 transition-colors duration-200"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/auth/register"
+                  className="bg-white/20 hover:bg-white/30 text-white px-3 py-1 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="md:hidden flex items-center space-x-2">
@@ -96,6 +138,43 @@ export function Navigation() {
                 {item.label}
               </Link>
             ))}
+
+            <div className="border-t border-amber-700 dark:border-amber-800 pt-2 mt-2">
+              {loading ? (
+                <div className="px-4 py-2 text-white text-sm">Loading...</div>
+              ) : user ? (
+                <div className="space-y-2">
+                  <div className="px-4 py-2 text-white text-sm flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {user.name}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-white font-medium rounded hover:bg-white/10 transition-all duration-200 flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Link
+                    href="/auth/login"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2 text-white font-medium rounded hover:bg-white/10 transition-all duration-200"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block px-4 py-2 text-white font-medium rounded hover:bg-white/10 transition-all duration-200"
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

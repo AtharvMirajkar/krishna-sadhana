@@ -1,25 +1,37 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Calendar, TrendingUp, Award, Flame } from 'lucide-react';
-import { getUserId } from '@/lib/utils';
+import { useAuth } from './AuthProvider';
 import { getStats, type Stats, type MantraStats } from '@/lib/api';
 
 export function ChantingTracker() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats>({ today: 0, week: 0, month: 0, streak: 0 });
   const [mantraStats, setMantraStats] = useState<MantraStats[]>([]);
   const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+      return;
+    }
+  }, [user, authLoading, router]);
+
   const loadStats = useCallback(async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
-      
-      const userId = getUserId();
-      const data = await getStats(userId);
-      
+
+      const data = await getStats(user.id);
+
       setStats(data.stats);
       setMantraStats(data.mantraStats);
     } catch (err) {
@@ -28,11 +40,27 @@ export function ChantingTracker() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    loadStats();
-  }, [loadStats]);
+    if (user) {
+      loadStats();
+    }
+  }, [loadStats, user]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   if (loading) {
     return (

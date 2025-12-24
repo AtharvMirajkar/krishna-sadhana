@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 import { Navigation } from "@/components/Navigation";
 import "./globals.css";
 
@@ -18,8 +19,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider>
-          <Navigation />
-          <main>{children}</main>
+          <AuthProvider>
+            <Navigation />
+            <main>{children}</main>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

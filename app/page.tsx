@@ -1,7 +1,29 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from "next/link";
 import { Sparkles, Book, BarChart3, Heart } from "lucide-react";
+import { useAuth } from '@/components/AuthProvider';
 
 export default function HomePage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect authenticated users to mantras page
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/mantras');
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       <div className="relative overflow-hidden">
@@ -40,16 +62,16 @@ export default function HomePage() {
               style={{ animationDelay: "0.3s" }}
             >
               <Link
-                href="/mantras"
+                href="/auth/login"
                 className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200"
               >
-                Explore Mantras
+                Get Started
               </Link>
               <Link
-                href="/tracker"
+                href="/auth/register"
                 className="px-8 py-4 bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 border-2 border-amber-500"
               >
-                View Progress
+                Create Account
               </Link>
             </div>
           </div>

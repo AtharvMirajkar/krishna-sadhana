@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Sparkles } from "lucide-react";
-import { getUserId, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import {
   getMantras,
   getChantingRecords,
   upsertChantingRecord,
   type Mantra,
 } from "@/lib/api";
+import { useAuth } from "./AuthProvider";
 
 export function MantraLibrary() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [mantras, setMantras] = useState<Mantra[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,17 +25,26 @@ export function MantraLibrary() {
     null
   );
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+      return;
+    }
+  }, [user, authLoading, router]);
+
   const loadData = useCallback(async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
 
-      const userId = getUserId();
       const today = formatDate(new Date());
 
       const [mantrasData, recordsData] = await Promise.all([
         getMantras(),
-        getChantingRecords(userId, { chantDate: today }),
+        getChantingRecords(user.id, { chantDate: today }),
       ]);
 
       setMantras(mantrasData);
@@ -47,20 +60,21 @@ export function MantraLibrary() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (user) {
+      loadData();
+    }
+  }, [loadData, user]);
 
   const incrementChant = useCallback(
     async (mantraId: string) => {
-      if (incrementingMantra) return;
+      if (incrementingMantra || !user) return;
 
       setIncrementingMantra(mantraId);
 
       try {
-        const userId = getUserId();
         const today = formatDate(new Date());
         const currentCount = chantingRecords[mantraId] || 0;
         const newCount = currentCount + 1;
@@ -73,7 +87,7 @@ export function MantraLibrary() {
 
         await upsertChantingRecord({
           mantra_id: mantraId,
-          user_id: userId,
+          user_id: user.id,
           chant_date: today,
           chant_count: newCount,
         });
@@ -88,8 +102,36 @@ export function MantraLibrary() {
         setTimeout(() => setIncrementingMantra(null), 300);
       }
     },
-    [chantingRecords, incrementingMantra]
+    [chantingRecords, incrementingMantra, user]
   );
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Don't render anything if not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   if (loading) {
     return (

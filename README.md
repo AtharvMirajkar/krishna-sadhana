@@ -24,6 +24,15 @@ A spiritual journey app for tracking mantra chanting and deepening devotion to L
 - Node.js 20.9+ (required for Next.js 15)
 - MongoDB instance (local or MongoDB Atlas)
 
+## 🔐 Authentication
+
+The app includes a complete authentication system with:
+
+- **User Registration & Login**: Secure password hashing with bcrypt
+- **Session Management**: Cookie-based sessions with JWT tokens
+- **Protected Routes**: Automatic redirects for unauthenticated users
+- **Sample Users**: Pre-seeded demo accounts for testing
+
 ## 🛠️ Installation
 
 1. **Clone the repository:**
@@ -42,10 +51,17 @@ npm install
 cp .env.example .env.local
 ```
 
-Edit `.env.local` and add your MongoDB connection string:
+Edit `.env.local` and add your connection strings:
 ```env
+# Database
 MONGODB_URI=mongodb://localhost:27017
 MONGODB_DB_NAME=krishna_devotee
+
+# Authentication (change this in production!)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Next.js
+NEXTAUTH_URL=http://localhost:3000
 ```
 
 For MongoDB Atlas:
@@ -65,6 +81,22 @@ npm run dev
 ```
 
 6. **Open [http://localhost:3000](http://localhost:3000)** in your browser.
+
+## 👤 Sample Login Credentials
+
+After seeding, you can log in with these accounts:
+
+```
+Demo User:
+  Email: demo@krishnabhakti.com
+  Password: demo123
+
+Krishna Devotee:
+  Email: devotee@krishnabhakti.com
+  Password: devotee123
+```
+
+Or create your own account using the registration form!
 
 ## 📁 Project Structure
 
@@ -102,14 +134,25 @@ krishna/
 
 ## 🔌 API Routes
 
-The app includes the following Next.js API routes:
+### Authentication Routes
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - Login user
+- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/me` - Get current authenticated user
 
+### App Routes
 - `GET /api/mantras` - Get all mantras
-- `GET /api/chanting-records` - Get chanting records (requires `user_id` query param)
-- `POST /api/chanting-records` - Create/update a chanting record
-- `GET /api/stats` - Get user statistics (requires `user_id` query param)
+- `GET /api/chanting-records` - Get chanting records (authenticated)
+- `POST /api/chanting-records` - Create/update chanting record (authenticated)
+- `GET /api/stats` - Get user statistics (authenticated)
 
 ## 🎯 Key Features
+
+### Authentication System
+- **Secure Registration/Login**: Password hashing with bcrypt
+- **Session Management**: Cookie-based authentication with JWT
+- **Protected Routes**: Automatic redirects and middleware protection
+- **User Management**: Proper user accounts with personal data
 
 ### App Router Benefits
 - **Server Components**: Faster initial page loads
