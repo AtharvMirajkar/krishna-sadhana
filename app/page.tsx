@@ -1,10 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Sparkles, Book, BarChart3, Heart } from "lucide-react";
-import { useAuth } from '@/components/AuthProvider';
+import { useAuth } from "@/components/AuthProvider";
+import { HomeSkeleton } from "@/components/skeleton";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -13,11 +14,7 @@ export default function HomePage() {
   // No redirect logic needed - home page should be accessible to all users
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
-      </div>
-    );
+    return <HomeSkeleton />;
   }
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
@@ -41,7 +38,9 @@ export default function HomePage() {
               className="text-2xl md:text-3xl text-gray-700 dark:text-gray-300 font-medium animate-slideUp"
               style={{ animationDelay: "0.1s" }}
             >
-              {user ? `Welcome back, ${user.name || 'Devotee'}!` : 'Welcome to Your Spiritual Journey'}
+              {user
+                ? `Welcome back, ${user.name || "Devotee"}!`
+                : "Welcome to Your Spiritual Journey"}
             </p>
 
             <p

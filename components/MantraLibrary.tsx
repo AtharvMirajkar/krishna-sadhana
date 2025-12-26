@@ -11,6 +11,7 @@ import {
   type Mantra,
 } from "@/lib/api";
 import { useAuth } from "./AuthProvider";
+import { MantraLibrarySkeleton } from "./skeleton";
 
 export function MantraLibrary() {
   const { user, loading: authLoading } = useAuth();
@@ -28,7 +29,7 @@ export function MantraLibrary() {
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
   }, [user, authLoading, router]);
@@ -107,25 +108,7 @@ export function MantraLibrary() {
 
   // Show loading while checking auth
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  // Don't render anything if not authenticated (will redirect)
-  if (!user) {
-    return null;
-  }
-
-  // Show loading while checking auth
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
-      </div>
-    );
+    return <MantraLibrarySkeleton />;
   }
 
   // Don't render anything if not authenticated (will redirect)
@@ -134,11 +117,7 @@ export function MantraLibrary() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-amber-500 border-t-transparent"></div>
-      </div>
-    );
+    return <MantraLibrarySkeleton />;
   }
 
   if (error) {

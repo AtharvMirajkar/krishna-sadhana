@@ -7,11 +7,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
-  experimental: {
-    turbopack: {
-      root: __dirname,
-    },
-  },
 };
 
 module.exports = nextConfig;
