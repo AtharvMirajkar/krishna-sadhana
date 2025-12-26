@@ -1,24 +1,31 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Calendar, TrendingUp, Award, Flame } from 'lucide-react';
-import { useAuth } from './AuthProvider';
-import { getStats, type Stats, type MantraStats } from '@/lib/api';
+import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Calendar, TrendingUp, Award, Flame } from "lucide-react";
+import { useAuth } from "./AuthProvider";
+import { getStats, type Stats, type MantraStats } from "@/lib/api";
 
 export function ChantingTracker() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<Stats>({ today: 0, week: 0, month: 0, streak: 0 });
+  const [stats, setStats] = useState<Stats>({
+    today: 0,
+    week: 0,
+    month: 0,
+    streak: 0,
+  });
   const [mantraStats, setMantraStats] = useState<MantraStats[]>([]);
-  const [activeTab, setActiveTab] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">(
+    "daily"
+  );
 
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!authLoading && !user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
       return;
     }
   }, [user, authLoading, router]);
@@ -35,8 +42,8 @@ export function ChantingTracker() {
       setStats(data.stats);
       setMantraStats(data.mantraStats);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load stats');
-      console.error('Error loading stats:', err);
+      setError(err instanceof Error ? err.message : "Failed to load stats");
+      console.error("Error loading stats:", err);
     } finally {
       setLoading(false);
     }
@@ -108,7 +115,10 @@ export function ChantingTracker() {
             <div className="text-sm opacity-90">Chants completed</div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp" style={{ animationDelay: '0.1s' }}>
+          <div
+            className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp"
+            style={{ animationDelay: "0.1s" }}
+          >
             <div className="flex items-center justify-between mb-4">
               <TrendingUp className="w-10 h-10" />
               <div className="text-4xl font-bold">{stats.week}</div>
@@ -117,7 +127,10 @@ export function ChantingTracker() {
             <div className="text-sm opacity-90">Total chants</div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp" style={{ animationDelay: '0.2s' }}>
+          <div
+            className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp"
+            style={{ animationDelay: "0.2s" }}
+          >
             <div className="flex items-center justify-between mb-4">
               <Award className="w-10 h-10" />
               <div className="text-4xl font-bold">{stats.month}</div>
@@ -126,7 +139,10 @@ export function ChantingTracker() {
             <div className="text-sm opacity-90">Total chants</div>
           </div>
 
-          <div className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp" style={{ animationDelay: '0.3s' }}>
+          <div
+            className="bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp"
+            style={{ animationDelay: "0.3s" }}
+          >
             <div className="flex items-center justify-between mb-4">
               <Flame className="w-10 h-10" />
               <div className="text-4xl font-bold">{stats.streak}</div>
@@ -136,34 +152,37 @@ export function ChantingTracker() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 animate-fadeIn" style={{ animationDelay: '0.4s' }}>
+        <div
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 animate-fadeIn"
+          style={{ animationDelay: "0.4s" }}
+        >
           <div className="flex flex-wrap gap-4 mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">
             <button
-              onClick={() => setActiveTab('daily')}
+              onClick={() => setActiveTab("daily")}
               className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'daily'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                activeTab === "daily"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
               Daily
             </button>
             <button
-              onClick={() => setActiveTab('weekly')}
+              onClick={() => setActiveTab("weekly")}
               className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'weekly'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                activeTab === "weekly"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
               Weekly
             </button>
             <button
-              onClick={() => setActiveTab('monthly')}
+              onClick={() => setActiveTab("monthly")}
               className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === 'monthly'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                activeTab === "monthly"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
               Monthly
@@ -172,16 +191,28 @@ export function ChantingTracker() {
 
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-              {activeTab === 'daily' && 'Today&apos;s Progress'}
-              {activeTab === 'weekly' && 'This Week&apos;s Progress'}
-              {activeTab === 'monthly' && 'This Month&apos;s Progress'}
+              {activeTab === "daily" && "Today's Progress"}
+              {activeTab === "weekly" && "This Week's Progress"}
+              {activeTab === "monthly" && "This Month's Progress"}
             </h2>
 
             {mantraStats.map((stat) => {
-              const count = activeTab === 'daily' ? stat.today : activeTab === 'weekly' ? stat.week : stat.month;
-              const maxCount = Math.max(...mantraStats.map(s =>
-                activeTab === 'daily' ? s.today : activeTab === 'weekly' ? s.week : s.month
-              ), 1);
+              const count =
+                activeTab === "daily"
+                  ? stat.today
+                  : activeTab === "weekly"
+                  ? stat.week
+                  : stat.month;
+              const maxCount = Math.max(
+                ...mantraStats.map((s) =>
+                  activeTab === "daily"
+                    ? s.today
+                    : activeTab === "weekly"
+                    ? s.week
+                    : s.month
+                ),
+                1
+              );
               const percentage = (count / maxCount) * 100;
 
               return (
@@ -209,13 +240,19 @@ export function ChantingTracker() {
               );
             })}
 
-            {mantraStats.every(s => {
-              const count = activeTab === 'daily' ? s.today : activeTab === 'weekly' ? s.week : s.month;
+            {mantraStats.every((s) => {
+              const count =
+                activeTab === "daily"
+                  ? s.today
+                  : activeTab === "weekly"
+                  ? s.week
+                  : s.month;
               return count === 0;
             }) && (
               <div className="text-center py-12">
                 <p className="text-xl text-gray-500 dark:text-gray-400">
-                  No chanting records for this period yet. Start chanting to see your progress!
+                  No chanting records for this period yet. Start chanting to see
+                  your progress!
                 </p>
               </div>
             )}

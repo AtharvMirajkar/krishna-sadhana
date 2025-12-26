@@ -10,12 +10,7 @@ export default function HomePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect authenticated users to mantras page
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/mantras');
-    }
-  }, [user, loading, router]);
+  // No redirect logic needed - home page should be accessible to all users
 
   if (loading) {
     return (
@@ -46,7 +41,7 @@ export default function HomePage() {
               className="text-2xl md:text-3xl text-gray-700 dark:text-gray-300 font-medium animate-slideUp"
               style={{ animationDelay: "0.1s" }}
             >
-              Welcome to Your Spiritual Journey
+              {user ? `Welcome back, ${user.name || 'Devotee'}!` : 'Welcome to Your Spiritual Journey'}
             </p>
 
             <p
@@ -61,18 +56,37 @@ export default function HomePage() {
               className="flex flex-wrap justify-center gap-4 pt-8 animate-slideUp"
               style={{ animationDelay: "0.3s" }}
             >
-              <Link
-                href="/auth/login"
-                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200"
-              >
-                Get Started
-              </Link>
-              <Link
-                href="/auth/register"
-                className="px-8 py-4 bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 border-2 border-amber-500"
-              >
-                Create Account
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    href="/mantras"
+                    className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200"
+                  >
+                    Continue Chanting
+                  </Link>
+                  <Link
+                    href="/tracker"
+                    className="px-8 py-4 bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 border-2 border-amber-500"
+                  >
+                    View Progress
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/auth/login"
+                    className="px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200"
+                  >
+                    Get Started
+                  </Link>
+                  <Link
+                    href="/auth/register"
+                    className="px-8 py-4 bg-white dark:bg-gray-800 text-amber-600 dark:text-amber-400 font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200 border-2 border-amber-500"
+                  >
+                    Create Account
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
