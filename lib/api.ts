@@ -111,16 +111,21 @@ export async function upsertChantingRecord(data: {
 /**
  * Fetch user statistics
  */
-export async function getStats(userId: string): Promise<{
+export async function getStats(
+  userId: string,
+  options?: { date?: string }
+): Promise<{
   stats: Stats;
   mantraStats: MantraStats[];
 }> {
-  const response = await fetch(
-    `/api/stats?user_id=${encodeURIComponent(userId)}`,
-    {
-      cache: "no-store",
-    }
-  );
+  const params = new URLSearchParams({ user_id: userId });
+  if (options?.date) {
+    params.append("date", options.date);
+  }
+
+  const response = await fetch(`/api/stats?${params.toString()}`, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch stats");

@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get("user_id");
+    const selectedDate = searchParams.get("date");
 
     if (!userId) {
       return NextResponse.json(
@@ -18,16 +19,17 @@ export async function GET(request: NextRequest) {
     }
 
     const db = await getDb();
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    // Use selected date if provided, otherwise use today
+    const referenceDate = selectedDate ? new Date(selectedDate) : new Date();
+    const todayStr = referenceDate.toISOString().split("T")[0];
 
-    // Get start of week (Sunday)
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay());
+    // Get start of week (Sunday) based on reference date
+    const weekStart = new Date(referenceDate);
+    weekStart.setDate(referenceDate.getDate() - referenceDate.getDay());
     const weekStartStr = weekStart.toISOString().split("T")[0];
 
-    // Get start of month
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    // Get start of month based on reference date
+    const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
     const monthStartStr = monthStart.toISOString().split("T")[0];
 
     // Fetch mantras and records
@@ -97,29 +99,32 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Calculate streak
-    const allRecords = await db
-      .collection<ChantingRecord>("chanting_records")
-      .find({ user_id: userId })
-      .sort({ chant_date: -1 })
-      .toArray();
-
-    const dateMap = new Map<string, number>();
-    allRecords.forEach((record) => {
-      const existing = dateMap.get(record.chant_date) || 0;
-      dateMap.set(record.chant_date, existing + record.chant_count);
-    });
-
+    // Calculate streak (only if not filtering by specific date)
     let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const checkDate = new Date(today);
-      checkDate.setDate(checkDate.getDate() - i);
-      const dateStr = checkDate.toISOString().split("T")[0];
+    if (!selectedDate) {
+      const allRecords = await db
+        .collection<ChantingRecord>("chanting_records")
+        .find({ user_id: userId })
+        .sort({ chant_date: -1 })
+        .toArray();
 
-      if (dateMap.has(dateStr) && (dateMap.get(dateStr) || 0) > 0) {
-        streak++;
-      } else if (i > 0) {
-        break;
+      const dateMap = new Map<string, number>();
+      allRecords.forEach((record) => {
+        const existing = dateMap.get(record.chant_date) || 0;
+        dateMap.set(record.chant_date, existing + record.chant_count);
+      });
+
+      const today = new Date();
+      for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - i);
+        const dateStr = checkDate.toISOString().split("T")[0];
+
+        if (dateMap.has(dateStr) && (dateMap.get(dateStr) || 0) > 0) {
+          streak++;
+        } else if (i > 0) {
+          break;
+        }
       }
     }
 

@@ -2,10 +2,16 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, TrendingUp, Award, Flame } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  TrendingUp,
+  Award,
+  Flame,
+} from "lucide-react";
 import { useAuth } from "./AuthProvider";
 import { getStats, type Stats, type MantraStats } from "@/lib/api";
 import { ChantingTrackerSkeleton } from "./skeleton";
+import { DatePicker } from "./ui/date-picker";
 
 export function ChantingTracker() {
   const { user, loading: authLoading } = useAuth();
@@ -22,6 +28,7 @@ export function ChantingTracker() {
   const [activeTab, setActiveTab] = useState<"daily" | "weekly" | "monthly">(
     "daily"
   );
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -38,7 +45,13 @@ export function ChantingTracker() {
       setLoading(true);
       setError(null);
 
-      const data = await getStats(user.id);
+      const dateString = selectedDate
+        ? selectedDate.toISOString().split("T")[0]
+        : undefined;
+      const data = await getStats(
+        user.id,
+        dateString ? { date: dateString } : undefined
+      );
 
       setStats(data.stats);
       setMantraStats(data.mantraStats);
@@ -48,7 +61,7 @@ export function ChantingTracker() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, selectedDate]);
 
   useEffect(() => {
     if (user) {
@@ -93,18 +106,48 @@ export function ChantingTracker() {
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700 dark:from-amber-400 dark:via-orange-400 dark:to-amber-500 mb-4">
             Chanting Tracker
           </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">
             Monitor your spiritual journey and celebrate your progress
           </p>
+
+          {/* Date Picker Section */}
+          <div className="flex flex-col items-center justify-center gap-4 mb-4">
+            <div className="w-full max-w-md">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 text-center">
+                Select Date to View Stats
+              </label>
+              <DatePicker
+                date={selectedDate}
+                onDateChange={setSelectedDate}
+                maxDate={new Date()}
+                placeholder="Select a date to view stats"
+                className="w-full"
+                showReset={true}
+              />
+            </div>
+            {selectedDate && (
+              <p className="text-sm text-amber-600 dark:text-amber-400 font-medium text-center">
+                Viewing stats for:{" "}
+                {selectedDate.toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp">
             <div className="flex items-center justify-between mb-4">
-              <Calendar className="w-10 h-10" />
+              <CalendarIcon className="w-10 h-10" />
               <div className="text-4xl font-bold">{stats.today}</div>
             </div>
-            <div className="text-lg font-semibold">Today</div>
+            <div className="text-lg font-semibold">
+              {selectedDate ? "Selected Date" : "Today"}
+            </div>
             <div className="text-sm opacity-90">Chants completed</div>
           </div>
 
@@ -116,7 +159,9 @@ export function ChantingTracker() {
               <TrendingUp className="w-10 h-10" />
               <div className="text-4xl font-bold">{stats.week}</div>
             </div>
-            <div className="text-lg font-semibold">This Week</div>
+            <div className="text-lg font-semibold">
+              {selectedDate ? "Week of Date" : "This Week"}
+            </div>
             <div className="text-sm opacity-90">Total chants</div>
           </div>
 
@@ -128,7 +173,9 @@ export function ChantingTracker() {
               <Award className="w-10 h-10" />
               <div className="text-4xl font-bold">{stats.month}</div>
             </div>
-            <div className="text-lg font-semibold">This Month</div>
+            <div className="text-lg font-semibold">
+              {selectedDate ? "Month of Date" : "This Month"}
+            </div>
             <div className="text-sm opacity-90">Total chants</div>
           </div>
 
@@ -184,9 +231,14 @@ export function ChantingTracker() {
 
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-              {activeTab === "daily" && "Today's Progress"}
-              {activeTab === "weekly" && "This Week's Progress"}
-              {activeTab === "monthly" && "This Month's Progress"}
+              {activeTab === "daily" &&
+                (selectedDate
+                  ? "Selected Date's Progress"
+                  : "Today's Progress")}
+              {activeTab === "weekly" &&
+                (selectedDate ? "Week's Progress" : "This Week's Progress")}
+              {activeTab === "monthly" &&
+                (selectedDate ? "Month's Progress" : "This Month's Progress")}
             </h2>
 
             {mantraStats.map((stat) => {
