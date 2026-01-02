@@ -7,11 +7,17 @@ import {
   TrendingUp,
   Award,
   Flame,
+  BarChart3,
+  Calendar,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
-import { getStats, type Stats, type MantraStats } from "@/lib/api";
+import { getStats, getAnalytics, type Stats, type MantraStats, type AnalyticsData } from "@/lib/api";
 import { ChantingTrackerSkeleton } from "./skeleton";
 import { DatePicker } from "./ui/date-picker";
+import { CalendarHeatmap } from "./visualizations/CalendarHeatmap";
+import { ProgressCharts } from "./visualizations/ProgressCharts";
+import { Milestones } from "./visualizations/Milestones";
 
 export function ChantingTracker() {
   const { user, loading: authLoading } = useAuth();
@@ -29,6 +35,10 @@ export function ChantingTracker() {
     "daily"
   );
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [viewMode, setViewMode] = useState<"stats" | "charts" | "calendar" | "milestones">("stats");
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [totalChants, setTotalChants] = useState(0);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -63,11 +73,30 @@ export function ChantingTracker() {
     }
   }, [user, selectedDate]);
 
+  const loadAnalytics = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setAnalyticsLoading(true);
+      const data = await getAnalytics(user.id, { days: 365 });
+      setAnalyticsData(data);
+      
+      // Calculate total chants
+      const total = data.chartData.reduce((sum, item) => sum + item.total, 0);
+      setTotalChants(total);
+    } catch (err) {
+      console.error("Error loading analytics:", err);
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       loadStats();
+      loadAnalytics();
     }
-  }, [loadStats, user]);
+  }, [loadStats, loadAnalytics, user]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -139,6 +168,54 @@ export function ChantingTracker() {
           </div>
         </div>
 
+        {/* View Mode Tabs */}
+        <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <button
+            onClick={() => setViewMode("stats")}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              viewMode === "stats"
+                ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            Stats
+          </button>
+          <button
+            onClick={() => setViewMode("charts")}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              viewMode === "charts"
+                ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            <TrendingUp className="w-4 h-4" />
+            Charts
+          </button>
+          <button
+            onClick={() => setViewMode("calendar")}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              viewMode === "calendar"
+                ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            Calendar
+          </button>
+          <button
+            onClick={() => setViewMode("milestones")}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center gap-2 ${
+              viewMode === "milestones"
+                ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+          >
+            <Trophy className="w-4 h-4" />
+            Milestones
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 animate-slideUp">
             <div className="flex items-center justify-between mb-4">
@@ -192,117 +269,183 @@ export function ChantingTracker() {
           </div>
         </div>
 
-        <div
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 animate-fadeIn"
-          style={{ animationDelay: "0.4s" }}
-        >
-          <div className="flex flex-wrap gap-4 mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">
-            <button
-              onClick={() => setActiveTab("daily")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === "daily"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              Daily
-            </button>
-            <button
-              onClick={() => setActiveTab("weekly")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === "weekly"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              Weekly
-            </button>
-            <button
-              onClick={() => setActiveTab("monthly")}
-              className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
-                activeTab === "monthly"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
-                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-              }`}
-            >
-              Monthly
-            </button>
-          </div>
+        {/* Content based on view mode */}
+        {viewMode === "stats" && (
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8 animate-fadeIn"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <div className="flex flex-wrap gap-4 mb-8 border-b border-gray-200 dark:border-gray-700 pb-4">
+              <button
+                onClick={() => setActiveTab("daily")}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === "daily"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                Daily
+              </button>
+              <button
+                onClick={() => setActiveTab("weekly")}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === "weekly"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                Weekly
+              </button>
+              <button
+                onClick={() => setActiveTab("monthly")}
+                className={`px-6 py-2 rounded-lg font-semibold transition-all duration-200 ${
+                  activeTab === "monthly"
+                    ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                }`}
+              >
+                Monthly
+              </button>
+            </div>
 
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
-              {activeTab === "daily" &&
-                (selectedDate
-                  ? "Selected Date's Progress"
-                  : "Today's Progress")}
-              {activeTab === "weekly" &&
-                (selectedDate ? "Week's Progress" : "This Week's Progress")}
-              {activeTab === "monthly" &&
-                (selectedDate ? "Month's Progress" : "This Month's Progress")}
-            </h2>
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-6">
+                {activeTab === "daily" &&
+                  (selectedDate
+                    ? "Selected Date's Progress"
+                    : "Today's Progress")}
+                {activeTab === "weekly" &&
+                  (selectedDate ? "Week's Progress" : "This Week's Progress")}
+                {activeTab === "monthly" &&
+                  (selectedDate ? "Month's Progress" : "This Month's Progress")}
+              </h2>
 
-            {mantraStats.map((stat) => {
-              const count =
-                activeTab === "daily"
-                  ? stat.today
-                  : activeTab === "weekly"
-                  ? stat.week
-                  : stat.month;
-              const maxCount = Math.max(
-                ...mantraStats.map((s) =>
+              {mantraStats.map((stat) => {
+                const count =
+                  activeTab === "daily"
+                    ? stat.today
+                    : activeTab === "weekly"
+                    ? stat.week
+                    : stat.month;
+                const maxCount = Math.max(
+                  ...mantraStats.map((s) =>
+                    activeTab === "daily"
+                      ? s.today
+                      : activeTab === "weekly"
+                      ? s.week
+                      : s.month
+                  ),
+                  1
+                );
+                const percentage = (count / maxCount) * 100;
+
+                return (
+                  <div key={stat.mantra.id} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                          {stat.mantra.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {stat.mantra.category}
+                        </p>
+                      </div>
+                      <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                        {count}
+                      </div>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <div
+                        className="h-full bg-gradient-to-r from-amber-500 to-orange-600 rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {mantraStats.every((s) => {
+                const count =
                   activeTab === "daily"
                     ? s.today
                     : activeTab === "weekly"
                     ? s.week
-                    : s.month
-                ),
-                1
-              );
-              const percentage = (count / maxCount) * 100;
-
-              return (
-                <div key={stat.mantra.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                        {stat.mantra.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {stat.mantra.category}
-                      </p>
-                    </div>
-                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                      {count}
-                    </div>
-                  </div>
-                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-500 to-orange-600 rounded-full transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
+                    : s.month;
+                return count === 0;
+              }) && (
+                <div className="text-center py-12">
+                  <p className="text-xl text-gray-500 dark:text-gray-400">
+                    No chanting records for this period yet. Start chanting to see
+                    your progress!
+                  </p>
                 </div>
-              );
-            })}
+              )}
+            </div>
+          </div>
+        )}
 
-            {mantraStats.every((s) => {
-              const count =
-                activeTab === "daily"
-                  ? s.today
-                  : activeTab === "weekly"
-                  ? s.week
-                  : s.month;
-              return count === 0;
-            }) && (
-              <div className="text-center py-12">
-                <p className="text-xl text-gray-500 dark:text-gray-400">
-                  No chanting records for this period yet. Start chanting to see
-                  your progress!
-                </p>
+        {viewMode === "charts" && (
+          <div className="animate-fadeIn" style={{ animationDelay: "0.4s" }}>
+            {analyticsLoading ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8">
+                <div className="text-center py-12">
+                  <p className="text-xl text-gray-500 dark:text-gray-400">
+                    Loading charts...
+                  </p>
+                </div>
+              </div>
+            ) : analyticsData ? (
+              <ProgressCharts
+                chartData={analyticsData.chartData}
+                mantraChartData={analyticsData.mantraChartData}
+                days={analyticsData.dateRange.days}
+              />
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 md:p-8">
+                <div className="text-center py-12">
+                  <p className="text-xl text-gray-500 dark:text-gray-400">
+                    No data available for charts yet.
+                  </p>
+                </div>
               </div>
             )}
           </div>
-        </div>
+        )}
+
+        {viewMode === "calendar" && (
+          <div className="animate-fadeIn" style={{ animationDelay: "0.4s" }}>
+            {analyticsLoading ? (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="text-center py-12">
+                  <p className="text-xl text-gray-500 dark:text-gray-400">
+                    Loading calendar...
+                  </p>
+                </div>
+              </div>
+            ) : analyticsData ? (
+              <CalendarHeatmap
+                data={analyticsData.chartData.map((d) => ({
+                  date: d.date,
+                  total: d.total,
+                }))}
+              />
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
+                <div className="text-center py-12">
+                  <p className="text-xl text-gray-500 dark:text-gray-400">
+                    No data available for calendar yet.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {viewMode === "milestones" && (
+          <div className="animate-fadeIn" style={{ animationDelay: "0.4s" }}>
+            <Milestones stats={stats} totalChants={totalChants} />
+          </div>
+        )}
       </div>
     </div>
   );

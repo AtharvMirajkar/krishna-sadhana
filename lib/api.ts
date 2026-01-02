@@ -133,3 +133,51 @@ export async function getStats(
 
   return response.json();
 }
+
+/**
+ * Analytics data types
+ */
+export interface AnalyticsData {
+  chartData: Array<{
+    date: string;
+    total: number;
+    byMantra: Record<string, number>;
+  }>;
+  mantraChartData: Array<{
+    name: string;
+    category: string;
+    value: number;
+    mantraId: string;
+  }>;
+  dateRange: {
+    start: string;
+    end: string;
+    days: number;
+  };
+}
+
+/**
+ * Fetch analytics data for visualizations
+ */
+export async function getAnalytics(
+  userId: string,
+  options?: { days?: number; groupBy?: string }
+): Promise<AnalyticsData> {
+  const params = new URLSearchParams({ user_id: userId });
+  if (options?.days) {
+    params.append("days", options.days.toString());
+  }
+  if (options?.groupBy) {
+    params.append("group_by", options.groupBy);
+  }
+
+  const response = await fetch(`/api/analytics?${params.toString()}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch analytics data");
+  }
+
+  return response.json();
+}
