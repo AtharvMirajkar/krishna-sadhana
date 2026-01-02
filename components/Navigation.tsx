@@ -18,6 +18,7 @@ export function Navigation() {
     { href: '/', label: 'Home' },
     { href: '/mantras', label: 'Mantra Library' },
     { href: '/tracker', label: 'Chanting Tracker' },
+    { href: '/learn', label: 'Learn' },
   ];
 
   const isActive = (href: string) => {
