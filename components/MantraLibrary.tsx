@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus, Sparkles, Edit2, Check, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import {
   getMantras,
@@ -25,6 +25,9 @@ export function MantraLibrary() {
   const [incrementingMantra, setIncrementingMantra] = useState<string | null>(
     null
   );
+  const [editingMantra, setEditingMantra] = useState<string | null>(null);
+  const [updatingMantra, setUpdatingMantra] = useState<string | null>(null);
+  const [countInputs, setCountInputs] = useState<Record<string, string>>({});
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -106,6 +109,98 @@ export function MantraLibrary() {
     [chantingRecords, incrementingMantra, user]
   );
 
+  const setChantCount = useCallback(
+    async (mantraId: string, count: number) => {
+      if (!user || updatingMantra === mantraId) return;
+
+      // Ensure we're editing the correct mantra
+      if (editingMantra !== mantraId) return;
+
+      // Validate count
+      if (count < 0 || !Number.isInteger(count)) {
+        return;
+      }
+
+      const oldCount = chantingRecords[mantraId] || 0;
+      setUpdatingMantra(mantraId);
+
+      try {
+        const today = formatDate(new Date());
+
+        // Optimistic update
+        setChantingRecords((prev) => ({
+          ...prev,
+          [mantraId]: count,
+        }));
+
+        await upsertChantingRecord({
+          mantra_id: mantraId,
+          user_id: user.id,
+          chant_date: today,
+          chant_count: count,
+        });
+
+        // Clear input and close edit mode
+        setCountInputs((prev) => {
+          const newInputs = { ...prev };
+          delete newInputs[mantraId];
+          return newInputs;
+        });
+        setEditingMantra(null);
+      } catch (err) {
+        console.error("Error setting chant count:", err);
+        // Revert optimistic update
+        setChantingRecords((prev) => ({
+          ...prev,
+          [mantraId]: oldCount,
+        }));
+      } finally {
+        setUpdatingMantra(null);
+      }
+    },
+    [chantingRecords, editingMantra, updatingMantra, user]
+  );
+
+  const handleInputChange = (mantraId: string, value: string) => {
+    // Only allow positive integers
+    if (value === "" || /^\d+$/.test(value)) {
+      setCountInputs((prev) => ({
+        ...prev,
+        [mantraId]: value,
+      }));
+    }
+  };
+
+  const handleEditClick = (mantraId: string) => {
+    const currentCount = chantingRecords[mantraId] || 0;
+    setCountInputs((prev) => ({
+      ...prev,
+      [mantraId]: currentCount.toString(),
+    }));
+    setEditingMantra(mantraId);
+  };
+
+  const handleCancelEdit = (mantraId: string) => {
+    setCountInputs((prev) => {
+      const newInputs = { ...prev };
+      delete newInputs[mantraId];
+      return newInputs;
+    });
+    setEditingMantra(null);
+  };
+
+  const handleSubmitCount = (mantraId: string) => {
+    const inputValue = countInputs[mantraId];
+    if (inputValue === undefined || inputValue === "") {
+      handleCancelEdit(mantraId);
+      return;
+    }
+    const count = parseInt(inputValue, 10);
+    if (!isNaN(count) && count >= 0) {
+      setChantCount(mantraId, count);
+    }
+  };
+
   // Show loading while checking auth
   if (authLoading) {
     return <MantraLibrarySkeleton />;
@@ -179,7 +274,7 @@ export function MantraLibrary() {
                   </div>
 
                   <div className="flex flex-col items-center gap-4 min-w-[140px]">
-                    <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-6 text-center shadow-lg">
+                    <div className="bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl p-6 text-center shadow-lg w-full">
                       <div className="text-white text-4xl font-bold mb-1">
                         {chantingRecords[mantra.id] || 0}
                       </div>
@@ -190,7 +285,11 @@ export function MantraLibrary() {
 
                     <button
                       onClick={() => incrementChant(mantra.id)}
-                      disabled={incrementingMantra === mantra.id}
+                      disabled={
+                        incrementingMantra === mantra.id ||
+                        editingMantra === mantra.id ||
+                        updatingMantra === mantra.id
+                      }
                       className={`w-full px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                         incrementingMantra === mantra.id
                           ? "scale-110 animate-pulse"
@@ -200,6 +299,74 @@ export function MantraLibrary() {
                       <Plus className="w-5 h-5" />
                       Chant
                     </button>
+
+                    {editingMantra === mantra.id ? (
+                      <div className="w-full space-y-2 animate-fadeIn">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={countInputs[mantra.id] || ""}
+                            onChange={(e) =>
+                              handleInputChange(mantra.id, e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === "Enter" &&
+                                updatingMantra !== mantra.id
+                              ) {
+                                handleSubmitCount(mantra.id);
+                              } else if (
+                                e.key === "Escape" &&
+                                updatingMantra !== mantra.id
+                              ) {
+                                handleCancelEdit(mantra.id);
+                              }
+                            }}
+                            autoFocus
+                            disabled={updatingMantra === mantra.id}
+                            className="flex-1 px-4 py-2 border-2 border-amber-400 dark:border-amber-500 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white font-semibold text-center focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                            placeholder="Enter count"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleSubmitCount(mantra.id)}
+                            disabled={
+                              editingMantra !== mantra.id ||
+                              updatingMantra === mantra.id
+                            }
+                            className={`flex-1 px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              updatingMantra === mantra.id
+                                ? "animate-pulse"
+                                : "hover:scale-105"
+                            }`}
+                          >
+                            <Check className="w-4 h-4" />
+                            {updatingMantra === mantra.id
+                              ? "Setting..."
+                              : "Set"}
+                          </button>
+                          <button
+                            onClick={() => handleCancelEdit(mantra.id)}
+                            disabled={updatingMantra === mantra.id}
+                            className="flex-1 px-4 py-2 bg-gradient-to-r from-gray-500 to-gray-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleEditClick(mantra.id)}
+                        disabled={editingMantra !== null}
+                        className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Set Count
+                      </button>
+                    )}
                   </div>
                 </div>
 
