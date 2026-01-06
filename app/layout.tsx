@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { Navigation } from "@/components/Navigation";
+import { NotificationManager } from "@/components/NotificationManager";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body>
         <ThemeProvider>
           <AuthProvider>
+            <NotificationManager />
             <Navigation />
             <main>{children}</main>
           </AuthProvider>

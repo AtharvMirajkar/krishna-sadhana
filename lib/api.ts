@@ -181,3 +181,58 @@ export async function getAnalytics(
 
   return response.json();
 }
+
+/**
+ * Notification settings types
+ */
+export interface ReminderSettings {
+  enabled: boolean;
+  dailyReminders: {
+    enabled: boolean;
+    times: string[];
+  };
+  streakProtection: {
+    enabled: boolean;
+    alertTime: string;
+  };
+  weeklySummary: {
+    enabled: boolean;
+    day: number;
+    time: string;
+  };
+  customMessage?: string;
+}
+
+/**
+ * Fetch notification settings
+ */
+export async function getNotificationSettings(): Promise<ReminderSettings> {
+  const response = await fetch("/api/notifications/settings", {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch notification settings");
+  }
+
+  return response.json();
+}
+
+/**
+ * Update notification settings
+ */
+export async function updateNotificationSettings(
+  settings: ReminderSettings
+): Promise<void> {
+  const response = await fetch("/api/notifications/settings", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(settings),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update notification settings");
+  }
+}
