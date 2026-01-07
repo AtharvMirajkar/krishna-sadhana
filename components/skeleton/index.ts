@@ -3,3 +3,4 @@ export { HomeSkeleton } from './HomeSkeleton';
 export { MantraLibrarySkeleton } from './MantraLibrarySkeleton';
 export { ChantingTrackerSkeleton } from './ChantingTrackerSkeleton';
 export { LearningResourcesSkeleton } from './LearningResourcesSkeleton';
+export { SpiritualJournalSkeleton } from './SpiritualJournalSkeleton';

@@ -53,12 +53,14 @@ export function TextSkeleton({
 interface CardSkeletonProps extends SkeletonProps {
   hasImage?: boolean;
   contentLines?: number;
+  children?: React.ReactNode;
 }
 
 export function CardSkeleton({
   hasImage = false,
   contentLines = 3,
   className = "",
+  children,
   ...props
 }: CardSkeletonProps) {
   return (
@@ -66,15 +68,21 @@ export function CardSkeleton({
       className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 ${className}`}
       {...props}
     >
-      {hasImage && <Skeleton className="w-full h-48 rounded-lg mb-4" />}
-      <div className="space-y-3">
-        <Skeleton className="h-6 w-3/4" />
-        <TextSkeleton lines={contentLines} lineHeight="h-4" />
-        <div className="flex gap-2 mt-4">
-          <Skeleton className="h-8 w-20" />
-          <Skeleton className="h-8 w-16" />
-        </div>
-      </div>
+      {children ? (
+        children
+      ) : (
+        <>
+          {hasImage && <Skeleton className="w-full h-48 rounded-lg mb-4" />}
+          <div className="space-y-3">
+            <Skeleton className="h-6 w-3/4" />
+            <TextSkeleton lines={contentLines} lineHeight="h-4" />
+            <div className="flex gap-2 mt-4">
+              <Skeleton className="h-8 w-20" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

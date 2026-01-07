@@ -2,13 +2,16 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Sparkles, Edit2, Check, X } from "lucide-react";
+import { Plus, Sparkles, Edit2, Check, X, StickyNote, MessageSquare } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import {
   getMantras,
   getChantingRecords,
   upsertChantingRecord,
+  getChantingNotes,
+  createChantingNote,
   type Mantra,
+  type ChantingNote,
 } from "@/lib/api";
 import { useAuth } from "./AuthProvider";
 import { MantraLibrarySkeleton } from "./skeleton";
@@ -28,6 +31,9 @@ export function MantraLibrary() {
   const [editingMantra, setEditingMantra] = useState<string | null>(null);
   const [updatingMantra, setUpdatingMantra] = useState<string | null>(null);
   const [countInputs, setCountInputs] = useState<Record<string, string>>({});
+  const [chantingNotes, setChantingNotes] = useState<Record<string, ChantingNote[]>>({});
+  const [addingNote, setAddingNote] = useState<string | null>(null);
+  const [noteInputs, setNoteInputs] = useState<Record<string, string>>({});
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -46,9 +52,10 @@ export function MantraLibrary() {
 
       const today = formatDate(new Date());
 
-      const [mantrasData, recordsData] = await Promise.all([
+      const [mantrasData, recordsData, notesData] = await Promise.all([
         getMantras(),
         getChantingRecords(user.id, { chantDate: today }),
+        getChantingNotes(user.id, { chantDate: today }),
       ]);
 
       setMantras(mantrasData);
@@ -58,6 +65,15 @@ export function MantraLibrary() {
         records[record.mantra_id] = record.chant_count;
       });
       setChantingRecords(records);
+
+      const notes: Record<string, ChantingNote[]> = {};
+      notesData.forEach((note) => {
+        if (!notes[note.mantra_id]) {
+          notes[note.mantra_id] = [];
+        }
+        notes[note.mantra_id].push(note);
+      });
+      setChantingNotes(notes);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
       console.error("Error loading data:", err);
@@ -188,6 +204,55 @@ export function MantraLibrary() {
     });
     setEditingMantra(null);
   };
+
+  const handleAddNote = useCallback(async (mantraId: string) => {
+    if (addingNote || !user) return;
+
+    const note = noteInputs[mantraId]?.trim();
+    if (!note) return;
+
+    setAddingNote(mantraId);
+
+    try {
+      const today = formatDate(new Date());
+      const newNote = await createChantingNote({
+        mantra_id: mantraId,
+        user_id: user.id,
+        chant_date: today,
+        note,
+      });
+
+      setChantingNotes(prev => ({
+        ...prev,
+        [mantraId]: [...(prev[mantraId] || []), newNote],
+      }));
+
+      setNoteInputs(prev => {
+        const newInputs = { ...prev };
+        delete newInputs[mantraId];
+        return newInputs;
+      });
+    } catch (err) {
+      console.error("Error adding note:", err);
+    } finally {
+      setAddingNote(null);
+    }
+  }, [addingNote, noteInputs, user]);
+
+  const handleNoteInputChange = useCallback((mantraId: string, value: string) => {
+    setNoteInputs(prev => ({
+      ...prev,
+      [mantraId]: value,
+    }));
+  }, []);
+
+  const cancelAddNote = useCallback((mantraId: string) => {
+    setNoteInputs(prev => {
+      const newInputs = { ...prev };
+      delete newInputs[mantraId];
+      return newInputs;
+    });
+  }, []);
 
   const handleSubmitCount = (mantraId: string) => {
     const inputValue = countInputs[mantraId];
@@ -368,6 +433,79 @@ export function MantraLibrary() {
                       </button>
                     )}
                   </div>
+                </div>
+
+                {/* Notes Section */}
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Session Notes
+                      </span>
+                    </div>
+                    {noteInputs[mantra.id] ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAddNote(mantra.id)}
+                          disabled={addingNote === mantra.id}
+                          className="px-3 py-1 bg-gradient-to-r from-green-500 to-green-600 text-white text-xs font-medium rounded hover:shadow transition-all duration-200 disabled:opacity-50"
+                        >
+                          {addingNote === mantra.id ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          onClick={() => cancelAddNote(mantra.id)}
+                          disabled={addingNote === mantra.id}
+                          className="px-3 py-1 bg-gray-500 text-white text-xs font-medium rounded hover:bg-gray-600 transition-all duration-200 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleNoteInputChange(mantra.id, "")}
+                        className="px-3 py-1 bg-gradient-to-r from-amber-500 to-orange-600 text-white text-xs font-medium rounded hover:shadow transition-all duration-200 flex items-center gap-1"
+                      >
+                        <StickyNote className="w-3 h-3" />
+                        Add Note
+                      </button>
+                    )}
+                  </div>
+
+                  {noteInputs[mantra.id] && (
+                    <div className="mb-3 animate-fadeIn">
+                      <textarea
+                        value={noteInputs[mantra.id]}
+                        onChange={(e) => handleNoteInputChange(mantra.id, e.target.value)}
+                        placeholder="How did this chanting session make you feel? Any insights or reflections..."
+                        rows={3}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
+                        disabled={addingNote === mantra.id}
+                      />
+                    </div>
+                  )}
+
+                  {/* Display existing notes */}
+                  {chantingNotes[mantra.id] && chantingNotes[mantra.id].length > 0 && (
+                    <div className="space-y-2">
+                      {chantingNotes[mantra.id].map((note, index) => (
+                        <div key={note.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            {note.note}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {new Date(note.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {(!chantingNotes[mantra.id] || chantingNotes[mantra.id].length === 0) && !noteInputs[mantra.id] && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      No notes yet. Add a note to reflect on your chanting experience.
+                    </p>
+                  )}
                 </div>
 
                 {mantra.duration_seconds > 0 && (

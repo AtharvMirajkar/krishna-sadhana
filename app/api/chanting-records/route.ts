@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { mantra_id, user_id, chant_date, chant_count } = body;
+    const { mantra_id, user_id, chant_date, chant_count, note } = body;
 
     if (!mantra_id || !user_id || !chant_date) {
       return NextResponse.json(
@@ -72,6 +72,18 @@ export async function POST(request: NextRequest) {
     const collection = db.collection<ChantingRecord>("chanting_records");
 
     // Upsert: update if exists, insert if not
+    const updateData: any = {
+      mantra_id,
+      user_id,
+      chant_date,
+      chant_count: chant_count || 0,
+      updated_at: now,
+    };
+
+    if (note !== undefined) {
+      updateData.note = note;
+    }
+
     await collection.updateOne(
       {
         mantra_id,
@@ -79,13 +91,7 @@ export async function POST(request: NextRequest) {
         chant_date,
       },
       {
-        $set: {
-          mantra_id,
-          user_id,
-          chant_date,
-          chant_count: chant_count || 0,
-          updated_at: now,
-        },
+        $set: updateData,
         $setOnInsert: {
           created_at: now,
         },
